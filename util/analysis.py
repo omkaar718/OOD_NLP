@@ -5,7 +5,7 @@ from statistics import mean, median
 
 
 def get_embeddings(args, model, dataset, norm=True, is_id = True):
-    checkpoint = torch.load("./models/best_model.pth")
+    checkpoint = torch.load("./models/sst2_best_model.pth")
     model.load_state_dict(checkpoint['model_state_dict'])
 
     optimizer = get_optimizer(args, model)
