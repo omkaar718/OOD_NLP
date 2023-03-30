@@ -5,7 +5,7 @@ from statistics import mean, median
 
 
 def get_embeddings(args, model, dataset, norm=True, is_id = True):
-    checkpoint = torch.load("./models/sst2_best_model.pth")
+    checkpoint = torch.load(f"./models/{args.task_name}_loss_{args.loss}_best_model.pth")
     model.load_state_dict(checkpoint['model_state_dict'])
 
     optimizer = get_optimizer(args, model)
@@ -54,9 +54,9 @@ def get_embeddings(args, model, dataset, norm=True, is_id = True):
 def analyze(args, model, dataset):
 
     bank, label_bank = get_embeddings(args, model, dataset)
-
+    N, d = bank.size()
     #find each class centroids
-    all_classes = list(set(label_bank.tolist())) if is_id else None
+    all_classes = list(set(label_bank.tolist())) 
     
     class_mean = torch.zeros(max(all_classes) + 1, d).cuda()
     for c in all_classes:

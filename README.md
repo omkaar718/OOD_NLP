@@ -17,7 +17,7 @@ python3 main_with_vis_and_multi_gpu.py --model_name_or_path roberta-large --loss
 ```
 The `task_name` parameter can take `sst2`, `imdb`, `trec`, or `20ng`
 
-Note: Keep --viz false if you want to avoid wandb viz and instead print on terminal
+Note: Keep --viz false if you want to avoid wandb viz and instead print on terminal. If cuda out of memory error occurs, please reduce the batch size using --batch_size argument in the command.
 
 
 # Analysis
@@ -26,12 +26,15 @@ Analysis script under util/analysis.py. This would help in analyzing the cluster
 ```
 python3 main_with_vis_and_multi_gpu.py --model_name_or_path roberta-large --loss custom --task_name 20ng --analysis true
 ```
+If cuda out of memory error occurs, please reduce the batch size using --batch_size argument in the command.
+
 # Plots
 
 Plotting script under util/plot.py. This would help in plotting the embeddings of ID and OOD data.
 ```
 python3 main_with_vis_and_multi_gpu.py --model_name_or_path roberta-large --loss custom --task_name 20ng --plot true
 ```
+If cuda out of memory error occurs, please reduce the batch size using --batch_size argument in the command.
 
 # Authors
 
