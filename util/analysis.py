@@ -4,12 +4,14 @@ from util.utils import set_seed, collate_fn, get_optimizer
 from statistics import mean, median
 
 
-def get_embeddings(args, model, dataset, norm=True, is_id = True):
-    checkpoint = torch.load(f"./models/{args.task_name}_loss_{args.loss}_best_model.pth")
-    model.load_state_dict(checkpoint['model_state_dict'])
+def get_embeddings(args, model, dataset, norm=True, is_id = True, load=True):
+    if load:
+        checkpoint = torch.load(f"./models/{args.task_name}_loss_{args.loss}_best_model.pth")
+        model.load_state_dict(checkpoint['model_state_dict'])
 
     optimizer = get_optimizer(args, model)
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    if load:
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     bank = None
     label_bank = None
     model.cuda()

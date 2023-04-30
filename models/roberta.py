@@ -46,7 +46,8 @@ class RobertaForSequenceClassification(BertPreTrainedModel):
         )
         sequence_output = outputs[0]
         logits, pooled = self.classifier(sequence_output)
-
+        # comp_losses = AverageMeter()
+        # dis_losses = AverageMeter()
         loss = None
         if labels is not None:
             if self.config.loss == 'margin':
@@ -67,7 +68,15 @@ class RobertaForSequenceClassification(BertPreTrainedModel):
                 cos_loss = (dist * mask).sum(-1) / (mask.sum(-1) + 1e-3) - (dist  * neg_mask).sum(-1) / (neg_mask.sum(-1) + 1e-3)
                 cos_loss = cos_loss.mean()        
             
-        
+            elif self.config.loss == "cider":
+                features = F.normalize(pooled, dim=-1)
+                dis_loss = self.config.criterion_dis(features, labels) # V2: EMA style
+                comp_loss = self.config.criterion_comp(features, self.config.criterion_dis.prototypes, labels)
+                loss = self.config.cider_w * comp_loss + dis_loss
+                # dis_losses.update(dis_loss.data, input.size(0))
+                # comp_losses.update(comp_loss.data, input.size(0))
+                cos_loss = loss.mean()
+                print("Loss :: ", cos_loss, dis_loss, comp_loss)
             else:
                 norm_pooled = F.normalize(pooled, dim=-1)
                 cosine_score = torch.exp(norm_pooled @ norm_pooled.t() / 0.3)

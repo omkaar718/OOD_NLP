@@ -61,50 +61,48 @@ def train(args, model, train_dataset, dev_dataset, test_dataset, benchmarks):
 
     num_steps = 0
     val_acc = 0
-    for epoch in range(int(args.num_train_epochs)):
-        print('\nEpoch : ', epoch) 
-        model.zero_grad()
-        loss = cos_loss = size = 0
-        for step, batch in enumerate(tqdm(train_dataloader)):
-            model.train()
-            batch = {key: value.to(args.device) for key, value in batch.items()}
-            outputs = model(**batch)
-            loss, cos_loss = outputs[0], outputs[1]
-            loss.backward()
-            num_steps += 1
-            optimizer.step()
-            scheduler.step()
-            model.zero_grad()
-            if args.viz.lower() == "true":
-                wandb.log({'loss': loss.item()}, step=num_steps)
-                wandb.log({'cos_loss': cos_loss.item()}, step=num_steps)
-            else:
-                loss += float(loss.item())
-                cos_loss += float(loss.item())
-                size += 1
-        if args.viz.lower() == "false": 
-            print(f"Epoch #{epoch} results:: ")
-            print(f"\tLoss :: {loss/size}")
-            print(f"\tCos_Loss :: {cos_loss/size}")
+    # for epoch in range(int(args.num_train_epochs)):
+    #     print('\nEpoch : ', epoch) 
+    #     model.zero_grad()
+    #     loss = cos_loss = size = 0
+    #     for step, batch in enumerate(tqdm(train_dataloader)):
+    #         model.train()
+    #         batch = {key: value.to(args.device) for key, value in batch.items()}
+    #         outputs = model(**batch)
+    #         loss, cos_loss = outputs[0], outputs[1]
+    #         loss.backward()
+    #         num_steps += 1
+    #         optimizer.step()
+    #         scheduler.step()
+    #         model.zero_grad()
+    #         if args.viz.lower() == "true":
+    #             wandb.log({'loss': loss.item()}, step=num_steps)
+    #             wandb.log({'cos_loss': cos_loss.item()}, step=num_steps)
+    #         else:
+    #             loss += float(loss.item())
+    #             cos_loss += float(loss.item())
+    #             size += 1
+    #     if args.viz.lower() == "false": 
+    #         print(f"Epoch #{epoch} results:: ")
+    #         print(f"\tLoss :: {loss/size}")
+    #         print(f"\tCos_Loss :: {cos_loss/size}")
         
 
-        results = evaluate(args, model, dev_dataset, tag="dev")
-        if results['dev_accuracy'] > val_acc:
-            val_acc = results['dev_accuracy']
-            print(f"\t [Checkpoint] Found Better Dev Accuracy :: {val_acc}")
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'loss': {loss/size},
-                'val_acc': {val_acc},
-                'cos_loss': {cos_loss/size},
-                }, f"./models/{args.task_name}_loss_{args.loss}_best_model.pth")
-        wandb.log(results, step=num_steps) if args.viz.lower() == "true" else print("\t Dev Validation :: ", results)
-        results = evaluate(args, model, test_dataset, tag="test")
-        wandb.log(results, step=num_steps) if args.viz.lower() == "true" else print("\t Test Results :: ", results)
-        detect_ood()
-
+    #     results = evaluate(args, model, dev_dataset, tag="dev")
+    #     if results['dev_accuracy'] > val_acc:
+    #         val_acc = results['dev_accuracy']
+    #         print(f"\t [Checkpoint] Found Better Dev Accuracy :: {val_acc}")
+    #         torch.save({
+    #             'epoch': epoch,
+    #             'model_state_dict': model.state_dict(),
+    #             'optimizer_state_dict': optimizer.state_dict(),
+    #             'loss': {loss/size},
+    #             'val_acc': {val_acc},
+    #             'cos_loss': {cos_loss/size},
+    #             }, f"./models/{args.task_name}_loss_{args.loss}_best_model.pth")
+    #     wandb.log(results, step=num_steps) if args.viz.lower() == "true" else print("\t Dev Validation :: ", results)
+    #     results = evaluate(args, model, test_dataset, tag="test")
+    #     wandb.log(results, step=num_steps) if args.viz.lower() == "true" else print("\t Test Results :: ", results)
     checkpoint = torch.load(f"./models/{args.task_name}_loss_{args.loss}_best_model.pth")
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
@@ -239,11 +237,7 @@ def main():
             benchmarks = (('ood_' + dataset, ood_dataset),) + benchmarks
     
     print("Loaded datasets successfully!")
-    data = DataLoader(train_dataset, batch_size=args.batch_size, collate_fn=collate_fn, shuffle=True, drop_last=True)
-    model.config.criterion_comp = CompLoss(args, temperature=0.1).cuda()
-    model.config.criterion_dis = DisLoss(args, model, data, temperature=0.1).cuda()
-    model.config.cider_w = 1
-    
+
     if args.plot.lower() == "true":
         in_data = DataLoader(dev_dataset, batch_size=args.batch_size, collate_fn=collate_fn)
         ood_dataset = []
