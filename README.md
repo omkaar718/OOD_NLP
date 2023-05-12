@@ -13,26 +13,26 @@ Datasets used in the paper is automatically downloaded by the dataset package. R
 # Training
 
 ```
-python3 main_with_vis_and_multi_gpu.py --model_name_or_path roberta-large --loss custom --task_name 20ng --viz true --project_name hw3_20ng_custom-2-lr_1e-5 --learning_rate 1e-5
+python3 main_final.py --model_name_or_path roberta-large --loss multi_task --task_name trec --centroids true --project_name final_trec --learning_rate 1e-6 --batch_size 16
 ```
-The `task_name` parameter can take `sst2`, `imdb`, `trec`, or `20ng`
+The `task_name` parameter can take `sst2`, `trec`, or `20ng`
 
-Note: Keep --viz false if you want to avoid wandb viz and instead print on terminal. If cuda out of memory error occurs, please reduce the batch size using --batch_size argument in the command.
+Note: Keep --viz false if you want to avoid wandb visualizations and instead print on terminal. If cuda out of memory error occurs, please reduce the batch size using --batch_size argument in the command.
 
 
 # Analysis
 
 Analysis script under util/analysis.py. This would help in analyzing the cluster centroids and their distances.
 ```
-python3 main_with_vis_and_multi_gpu.py --model_name_or_path roberta-large --loss custom --task_name 20ng --analysis true
+python3 main_final.py --model_name_or_path roberta-large --loss multi_task --task_name trec --viz false --analysis true
 ```
 If cuda out of memory error occurs, please reduce the batch size using --batch_size argument in the command.
 
 # Plots
 
-Plotting script under util/plot.py. This would help in plotting the embeddings of ID and OOD data.
+Plotting script under util/plot.py. This would visualize the embeddings of ID and OOD data using t-SNE.
 ```
-python3 main_with_vis_and_multi_gpu.py --model_name_or_path roberta-large --loss custom --task_name 20ng --plot true
+python3 main_final.py --model_name_or_path roberta-large --loss multi_task --task_name trec --viz false --plot true  
 ```
 If cuda out of memory error occurs, please reduce the batch size using --batch_size argument in the command.
 
