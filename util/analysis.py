@@ -179,7 +179,7 @@ def get_optimal_virtual_centroids(args, model, dataset):
     print_freq = 50
     epochs = 500
     lr = 0.01
-    print('Loss : ')
+    #print('Loss : ')
     for epoch in range(epochs):
         loss = 0
         for c in class_mean:
@@ -194,16 +194,18 @@ def get_optimal_virtual_centroids(args, model, dataset):
                 c /= torch.norm(c)
                 
                 c.grad = None
-
+        '''
         if(epoch % print_freq == 0):
             print(loss)
+        '''
 
+    '''
     print('\nfinal distances')
     for c in class_mean:
         print('\n')
         for c_ in class_mean:
             print(pdist(c, c_))
-
+    '''
     return class_mean
 
 
