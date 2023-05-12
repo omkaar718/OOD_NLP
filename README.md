@@ -13,7 +13,7 @@ Datasets used in the paper is automatically downloaded by the dataset package. R
 # Training
 
 ```
-python3 main_final.py --model_name_or_path roberta-large --loss multi_task --task_name trec --centroids true --project_name final_trec --learning_rate 1e-6 --batch_size 16
+python3 main_final.py --model_name_or_path roberta-large --loss multi_task --task_name trec --centroids true --project_name final_trec --learning_rate 1e-6 --batch_size 16 --viz false
 ```
 The `task_name` parameter can take `sst2`, `trec`, or `20ng`
 
