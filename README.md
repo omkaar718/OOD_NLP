@@ -30,7 +30,7 @@ If cuda out of memory error occurs, please reduce the batch size using --batch_s
 
 # Plots
 
-Plotting script under util/plot.py. This would visualize the embeddings of ID and OOD data using t-SNE.
+Plotting script under util/plot.py. This would visualize the embeddings of ID and OOD data using t-SNE. An image of the embeddings gets saved in the current working directory.
 ```
 python3 main_final.py --model_name_or_path roberta-large --loss multi_task --task_name trec --viz false --plot true  
 ```
