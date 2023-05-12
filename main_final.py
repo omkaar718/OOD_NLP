@@ -60,8 +60,7 @@ def train(args,num_labels, optimal_centroids,  model, train_dataset, dev_dataset
 
     num_steps = 0
     
-    # before training
-    detect_ood()
+    
     val_acc = 0
     for epoch in range(int(args.num_train_epochs)):
         print('\nEpoch : ', epoch) 
@@ -106,25 +105,24 @@ def train(args,num_labels, optimal_centroids,  model, train_dataset, dev_dataset
                 'cos_loss': {cos_loss/size},
                 }, f"./models/final_{args.task_name}_loss_{args.loss}_best_model.pth")
         
-        wandb.log(results, step=num_steps) if args.viz.lower() == "true" else pirint("\t Dev Validation :: ", results)
-        results = evaluate(args, num_steps, num_labels, optimal_centroids, model, test_dataset, tag="test")
-        wandb.log(results, step=num_steps) if args.viz.lower() == "true" else print("\t Test Results :: ", results)
-        detect_ood()
+        wandb.log(results, step=num_steps) if args.viz.lower() == "true" else print("\t Dev Validation :: ", results)
+        #results = evaluate(args, num_steps, num_labels, optimal_centroids, model, test_dataset, tag="test")
+        #wandb.log(results, step=num_steps) if args.viz.lower() == "true" else print("\t Test Results :: ", results)
+        
 
-    '''
-    checkpoint = torch.load(f"./models/{args.task_name}_loss_{args.loss}_best_model.pth")
+    checkpoint = torch.load(f"./models/final_{args.task_name}_loss_{args.loss}_best_model.pth")
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     epoch = checkpoint['epoch']
     loss = checkpoint['loss']
     val_acc = checkpoint['val_acc']
     cos_loss = checkpoint['cos_loss']
-    print(f"\t Evaluating best model got at epoch # :{epoch}, with accuracy : {val_acc} and  loss :: {loss}, cos_loss :: {cos_loss}")
+    print(f"\t Evaluating best model got at epoch # :{epoch}")
     results = evaluate(args, num_steps, num_labels, optimal_centroids, model, test_dataset, tag="test")
     wandb.log(results, step=num_steps) if args.viz.lower() == "true" else print("\t Test Results :: ", results)
-    #:wq
+
     detect_ood()
-    '''
+    
 
 
 def evaluate(args, num_steps, num_labels, optimal_centroids, model, eval_dataset, tag="train"):
@@ -168,10 +166,11 @@ def evaluate(args, num_steps, num_labels, optimal_centroids, model, eval_dataset
     total_loss /= step
     total_cos_loss /= step
     print('\n\n')
-    print(f"Loss for tag {tag} at num_steps {num_steps} = {total_loss}")
-    print(f"cos_loss for tag {tag} at num_steps {num_steps} = {total_cos_loss}")
-    wandb.log({f'{tag}_loss': total_loss}, step=num_steps)
-    wandb.log({f'{tag}_cos_loss': total_cos_loss}, step=num_steps)
+    #print(f"Loss for tag {tag} at num_steps {num_steps} = {total_loss}")
+    #print(f"cos_loss for tag {tag} at num_steps {num_steps} = {total_cos_loss}")
+    if(args.viz.lower() == 'true'):
+        wandb.log({f'{tag}_loss': total_loss}, step=num_steps)
+        wandb.log({f'{tag}_cos_loss': total_cos_loss}, step=num_steps)
 
     return results
 
@@ -246,8 +245,8 @@ def main():
     else:
         raise Exception("Currently only BERT, Roberta, Deberta Models are supported")
 
-    datasets = ['rte', 'sst2', 'mnli', '20ng', 'trec', 'imdb', 'wmt16', 'multi30k']
-    # datasets = ['trec', 'multi30k']
+    #datasets = ['rte', 'sst2', 'mnli', '20ng', 'trec', 'imdb', 'wmt16', 'multi30k']
+    datasets = ['trec', 'multi30k']
     benchmarks = ()
 
     for dataset in datasets:
@@ -276,8 +275,9 @@ def main():
 
     if args.centroids.lower() == "true":
         data =  DataLoader(dev_dataset, batch_size=args.batch_size, collate_fn=collate_fn, shuffle=True, drop_last=True)
+        print("Computing optimal centroids (step 1 in Section 3.3 of the project report)...")
         optimal_centroids = get_optimal_virtual_centroids(args, model, data)
-        print('Optimal centroids obtained in main: ', optimal_centroids)
+        print('Optimal centroids obtained')
         #if args.plot.lower() == "false" and args.analysis.lower() == "false":
     
         train(args, num_labels, optimal_centroids, model, train_dataset, dev_dataset, test_dataset, benchmarks)
