@@ -245,8 +245,8 @@ def main():
     else:
         raise Exception("Currently only BERT, Roberta, Deberta Models are supported")
 
-    #datasets = ['rte', 'sst2', 'mnli', '20ng', 'trec', 'imdb', 'wmt16', 'multi30k']
-    datasets = ['trec', 'multi30k']
+    datasets = ['rte', 'sst2', 'mnli', '20ng', 'trec', 'imdb', 'wmt16', 'multi30k']
+    #datasets = ['trec', 'multi30k']
     benchmarks = ()
 
     for dataset in datasets:
