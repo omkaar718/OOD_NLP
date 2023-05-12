@@ -35,19 +35,25 @@ class RobertaForSequenceClassification(BertPreTrainedModel):
 
     def forward(
         self,
+        num_labels,
+        optimal_centroids,
         input_ids=None,
         attention_mask=None,
         labels=None,
     ):
-
+        pdist =  pdist = torch.nn.PairwiseDistance(p=2)
+        # print('\nLabels received : ', type(labels), labels.size(), labels)
         outputs = self.roberta(
             input_ids,
             attention_mask=attention_mask,
         )
         sequence_output = outputs[0]
         logits, pooled = self.classifier(sequence_output)
+        #bank = None
+        #label_bank = None
 
         loss = None
+        #cos_loss = torch.Tensor(0).cuda()
         if labels is not None:
             if self.config.loss == 'margin':
                 dist = ((pooled.unsqueeze(1) - pooled.unsqueeze(0)) ** 2).mean(-1)
@@ -66,9 +72,89 @@ class RobertaForSequenceClassification(BertPreTrainedModel):
                 neg_mask = (labels.unsqueeze(1) != labels.unsqueeze(0)).float()
                 cos_loss = (dist * mask).sum(-1) / (mask.sum(-1) + 1e-3) - (dist  * neg_mask).sum(-1) / (neg_mask.sum(-1) + 1e-3)
                 cos_loss = cos_loss.mean()        
-            
-        
-            else:
+
+            elif(self.config.loss == 'stage_2_compactness'):
+                norm_pooled = F.normalize(pooled, dim=-1)
+                dist = ((norm_pooled.unsqueeze(1) - norm_pooled.unsqueeze(0)) ** 2).mean(-1)
+                mask = (labels.unsqueeze(1) == labels.unsqueeze(0)).float()
+                mask = mask - torch.diag(torch.diag(mask))
+                # neg_mask = (labels.unsqueeze(1) != labels.unsqueeze(0)).float()
+                cos_loss = (dist * mask).sum(-1) / (mask.sum(-1) + 1e-3)
+                # - (dist  * neg_mask).sum(-1) / (neg_mask.sum(-1) + 1e-3)
+                cos_loss = cos_loss.mean()
+
+            elif(self.config.loss in ['custom-3', 'stage2_centroids'] ):
+                '''
+                if bank is None:
+                    bank = pooled
+                    label_bank = labels.clone().detach() if is_id else None
+                else:
+                    print('\nIn bank not None')
+                    bank = torch.cat([pooled.clone().detach(), bank], dim=0)
+                    label_bank = torch.cat([labels.clone().detach(), label_bank], dim=0) if is_id else None
+                '''
+
+                norm_pooled = F.normalize(pooled, dim=-1)
+                N, d = norm_pooled.size()
+                class_mean = torch.zeros(num_labels, d).cuda()
+                
+                for c in range(num_labels):
+                    this_class_elements =  norm_pooled[labels.clone().detach() == c]
+                    if(this_class_elements.numel()):
+                        class_mean[c] = this_class_elements.mean(0)
+                    #class_mean[c] = norm_pooled[labels.clone().detach() == c].mean(0)
+
+
+                #print('\nCurrent Class mean : ',class_mean)
+                cos_loss = 0
+                for n in range(num_labels):
+                    
+                    if(not torch.equal(class_mean[n], torch.zeros(d).cuda())):
+                        #print('Contributing to loss : ', n)
+                        distance_ = pdist(class_mean[n], optimal_centroids[n])
+                        # print('\ndistance : ', distance_)
+                        cos_loss += distance_
+                        # print('cos_loss at n  ',n,  cos_loss)
+                #cos_loss = cos_loss.mean()
+                #print('Mean cos_loss : ', cos_loss)
+
+            elif(self.config.loss == 'multi_task'):
+                norm_pooled = F.normalize(pooled, dim=-1)
+                dist = ((norm_pooled.unsqueeze(1) - norm_pooled.unsqueeze(0)) ** 2).mean(-1)
+                mask = (labels.unsqueeze(1) == labels.unsqueeze(0)).float()
+                mask = mask - torch.diag(torch.diag(mask))
+                neg_mask = (labels.unsqueeze(1) != labels.unsqueeze(0)).float()
+                cos_loss_1 = (dist * mask).sum(-1) / (mask.sum(-1) + 1e-3) - (dist  * neg_mask).sum(-1) / (neg_mask.sum(-1) + 1e-3)
+                cos_loss_1 = cos_loss_1.mean()
+
+                # loss 2
+                norm_pooled = F.normalize(pooled, dim=-1)
+                N, d = norm_pooled.size()
+                class_mean = torch.zeros(num_labels, d).cuda()
+
+
+                for c in range(num_labels):
+                    this_class_elements =  norm_pooled[labels.clone().detach() == c]
+                    if(this_class_elements.numel()):
+                        class_mean[c] = this_class_elements.mean(0)
+                    #class_mean[c] = norm_pooled[labels.clone().detach() == c].mean(0)
+
+
+                #print('\nCurrent Class mean : ',class_mean)
+                cos_loss_2 = 0
+                for n in range(num_labels):
+
+                    if(not torch.equal(class_mean[n], torch.zeros(d).cuda())):
+                        #print('Contributing to loss : ', n)
+                        distance_ = pdist(class_mean[n], optimal_centroids[n])
+                        # print('\ndistance : ', distance_)
+                        cos_loss_2 += distance_
+                cos_loss_2 /= num_labels
+                cos_loss = cos_loss_1 + cos_loss_2
+
+
+            elif(self.config.loss == 'supcon'):
+                
                 norm_pooled = F.normalize(pooled, dim=-1)
                 cosine_score = torch.exp(norm_pooled @ norm_pooled.t() / 0.3)
                 mask = (labels.unsqueeze(1) == labels.unsqueeze(0)).float()
@@ -89,6 +175,7 @@ class RobertaForSequenceClassification(BertPreTrainedModel):
             loss = loss + self.config.alpha * cos_loss
         output = (logits,) + outputs[2:]
         output = output + (pooled,)
+        #print('\nLoss, cos_loss', loss, cos_loss)
         return ((loss, cos_loss) + output) if loss is not None else output
 
     def compute_ood(
